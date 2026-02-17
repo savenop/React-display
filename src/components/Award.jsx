@@ -4,6 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 // --- GLOBAL CACHE ---
 let achievementsCache = null;
 
+// Helper: Get Initials from Name
+const getInitials = (name) => {
+  if (!name) return "ST"; 
+  const parts = name.trim().split(/\s+/); 
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 // Helper: Convert Google Drive View Link to Embed Link
 const getDriveImage = (url) => {
   if (!url || !url.includes('google.com')) return null;
@@ -15,19 +23,55 @@ const getDriveImage = (url) => {
   } else if (url.includes('id=')) {
     id = new URL(url).searchParams.get('id');
   }
-  return id ? `https://lh3.googleusercontent.com/d/${id}=w1000?authuser=0` : url;
+  return id ? `https://googleusercontent.com/profile/picture/0${id}?authuser=0&w=1000` : url;
 };
 
 // Helper: Theme logic
 const getAwardTheme = (pos) => {
   const p = pos?.toLowerCase() || "";
   if (p.includes("1st") || p.includes("winner") || p.includes("first")) 
-    return { main: "#f59e0b", label: "WINNER", bg: "bg-amber-50", border: "border-amber-200", icon: "text-amber-500" }; 
+    return { 
+      main: "#f59e0b", 
+      label: "WINNER", 
+      bg: "bg-amber-50", 
+      border: "border-amber-200", 
+      icon: "text-amber-600",
+      gradient: "from-amber-400 to-orange-500",
+      darkBg: "bg-gray-900", // Darker base for gold to pop
+      blob: ["#f59e0b", "#d97706", "#fbbf24"] // Colors for animation
+    }; 
   if (p.includes("2nd") || p.includes("runner") || p.includes("second")) 
-    return { main: "#64748b", label: "RUNNER UP", bg: "bg-slate-50", border: "border-slate-200", icon: "text-slate-500" };
+    return { 
+      main: "#64748b", 
+      label: "RUNNER UP", 
+      bg: "bg-slate-50", 
+      border: "border-slate-200", 
+      icon: "text-slate-600",
+      gradient: "from-slate-400 to-slate-600",
+      darkBg: "bg-slate-900",
+      blob: ["#94a3b8", "#64748b", "#cbd5e1"]
+    };
   if (p.includes("3rd") || p.includes("third")) 
-    return { main: "#d97706", label: "KEEP IT UP", bg: "bg-orange-50", border: "border-orange-200", icon: "text-orange-500" };
-  return { main: "#8b5cf6", label: "PARTICIPATION", bg: "bg-violet-50", border: "border-violet-200", icon: "text-violet-500" };
+    return { 
+      main: "#d97706", 
+      label: "KEEP IT UP", 
+      bg: "bg-orange-50", 
+      border: "border-orange-200", 
+      icon: "text-orange-600",
+      gradient: "from-orange-400 to-red-500",
+      darkBg: "bg-orange-950",
+      blob: ["#ea580c", "#c2410c", "#fb923c"]
+    };
+  return { 
+    main: "#8b5cf6", 
+    label: "PARTICIPATION", 
+    bg: "bg-violet-50", 
+    border: "border-violet-200", 
+    icon: "text-violet-600",
+    gradient: "from-violet-400 to-purple-600",
+    darkBg: "bg-[#2e1065]", // Deep violet
+    blob: ["#8b5cf6", "#7c3aed", "#a78bfa"]
+  };
 };
 
 const Award = ({ slideIndex = 0 }) => {
@@ -69,6 +113,9 @@ const Award = ({ slideIndex = 0 }) => {
   const eventImage = getDriveImage(driveLink);
   const stipend = item["Winning Amount/ Stipend (if any for hackathon/ internship or any other extra curricular event)"];
   const finalStipend = (stipend && stipend.toLowerCase() !== "na" && stipend.trim() !== "") ? stipend : "N/A";
+  
+  // Text content for fallback
+  const positionText = item["Your position /Achievement"] || "Participant";
 
   return (
     <div className="relative w-full min-h-screen bg-[#F8F9FA] text-[#2C3E50] overflow-x-hidden">
@@ -85,7 +132,6 @@ const Award = ({ slideIndex = 0 }) => {
       <div className="relative z-10 container mx-auto px-6 md:px-12">
         
         {/* --- HEADER --- */}
-        {/* Changed pt-32 to pt-20 to pull content up */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -111,40 +157,92 @@ const Award = ({ slideIndex = 0 }) => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.5, ease: "circOut" }}
-            // Increased pb-12 to pb-24 to create bottom margin
             className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start pb-24" 
           >
             
-            {/* --- LEFT COL: IMAGE (Span 7) --- */}
+            {/* --- LEFT COL: IMAGE OR FALLBACK (Span 7) --- */}
             <div className="lg:col-span-7 relative group">
               <div className="absolute -inset-4 border-2 border-dashed border-gray-300 rounded-[2.5rem] opacity-50 rotate-1 group-hover:rotate-0 transition-transform duration-500"></div>
               
-              <div className="relative h-[400px] md:h-[550px] rounded-[2rem] overflow-hidden shadow-2xl ring-8 ring-white">
+              <div className="relative h-[400px] md:h-[550px] rounded-[2rem] overflow-hidden shadow-2xl ring-8 ring-white bg-white">
                 {eventImage ? (
                   <img 
                     src={eventImage} 
                     alt="Event" 
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                    onError={(e) => { e.target.onerror = null; e.target.src = "https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=2070&auto=format&fit=crop"; }}
+                    onError={(e) => { 
+                        e.target.style.display='none';
+                        e.target.nextSibling.style.display='flex'; 
+                    }}
                   />
-                ) : (
-                  <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                      <p className="text-white/30 font-bold text-xl uppercase tracking-widest">Event Gallery</p>
+                ) : null}
+
+                {/* --- FALLBACK & ON_ERROR CONTAINER --- */}
+                {/* This shows if !eventImage OR if onError triggers (via style manipulation above, but mostly for !eventImage logic below) */}
+                <div 
+                    style={{ display: eventImage ? 'none' : 'flex' }}
+                    className={`w-full h-full ${theme.darkBg} flex-col items-center justify-center p-8 text-center relative overflow-hidden`}
+                >
+                    {/* 1. Animated Lava Lamp Blobs */}
+                    <motion.div 
+                        animate={{ x: [0, 50, -50, 0], y: [0, -50, 50, 0], scale: [1, 1.2, 0.8, 1] }}
+                        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                        className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full blur-[80px] opacity-60"
+                        style={{ backgroundColor: theme.blob[0] }}
+                    />
+                    <motion.div 
+                        animate={{ x: [0, -30, 30, 0], y: [0, 40, -40, 0], scale: [1, 1.1, 0.9, 1] }}
+                        transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                        className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full blur-[80px] opacity-60"
+                        style={{ backgroundColor: theme.blob[1] }}
+                    />
+                    
+                    {/* 2. Texture Overlay (Noise) */}
+                    <div className="absolute inset-0 opacity-20" 
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} 
+                    />
+
+                    {/* 3. Glass Card Content */}
+                    <div className="relative z-10 w-full max-w-lg backdrop-blur-sm border border-white/10 bg-white/5 p-8 rounded-3xl shadow-2xl">
+                         {/* Achievement Category Badge */}
+                         <div className="mb-6">
+                            <span 
+                                className="inline-block px-4 py-1.5 rounded-full text-xs md:text-sm font-black text-white uppercase tracking-[0.2em] shadow-lg border border-white/20"
+                                style={{ backgroundColor: theme.main }} // Use solid theme color for badge
+                            >
+                                {positionText}
+                            </span>
+                         </div>
+
+                         {/* Event Name (BIG HERO) */}
+                         <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[1.1] tracking-tight drop-shadow-xl mb-4 line-clamp-3">
+                            {item["Event Name/ Title"]}
+                         </h2>
+
+                         {/* Decorative Element */}
+                         <div className="flex justify-center gap-2 mt-6 opacity-50">
+                            <div className="w-2 h-2 rounded-full bg-white"></div>
+                            <div className="w-2 h-2 rounded-full bg-white"></div>
+                            <div className="w-2 h-2 rounded-full bg-white"></div>
+                         </div>
+                    </div>
+                </div>
+
+                
+                {/* Captured At Badge (Show only if Organization is present) */}
+                {item["Organization \n[Organization in which event happened]"] && (
+                  <div className="absolute bottom-6 right-6 z-20">
+                     <div className="bg-white/95 backdrop-blur px-6 py-3 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-gray-50 text-[#E67E22]">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Captured At</p>
+                          <p className="text-sm font-extrabold text-[#2C3E50] max-w-[150px] truncate">{item["Organization \n[Organization in which event happened]"]}</p>
+                        </div>
+                     </div>
                   </div>
                 )}
-                
-                {/* Captured At Badge */}
-                <div className="absolute bottom-6 right-6">
-                   <div className="bg-white/95 backdrop-blur px-6 py-3 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-gray-50 text-[#E67E22]">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Captured At</p>
-                        <p className="text-sm font-extrabold text-[#2C3E50] max-w-[150px] truncate">{item["Organization \n[Organization in which event happened]"]}</p>
-                      </div>
-                   </div>
-                </div>
               </div>
             </div>
 
@@ -153,13 +251,20 @@ const Award = ({ slideIndex = 0 }) => {
               
               {/* 1. STUDENT PROFILE */}
               <div className="flex items-start gap-6">
+                 {/* Initials Container */}
                  <div className="relative shrink-0">
                     <div className="absolute inset-0 bg-[#E67E22] rounded-3xl rotate-6 opacity-20"></div>
-                    <img 
-                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(item["Student Name"])}&backgroundColor=ffffff`} 
-                      className="relative w-24 h-24 md:w-32 md:h-32 rounded-3xl border-4 border-white shadow-xl bg-white" 
-                      alt="Student" 
-                    />
+                    
+                    <div className={`relative w-24 h-24 md:w-32 md:h-32 rounded-3xl border-4 border-white shadow-xl flex items-center justify-center overflow-hidden bg-gradient-to-br ${theme.gradient}`}>
+                       {/* Background Texture */}
+                       <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `radial-gradient(white 1px, transparent 1px)`, backgroundSize: '8px 8px' }}></div>
+                       
+                       {/* Initials */}
+                       <span className="relative z-10 text-white font-black text-3xl md:text-5xl tracking-tighter drop-shadow-md">
+                          {getInitials(item["Student Name"])}
+                       </span>
+                    </div>
+
                     <div className="absolute -bottom-3 -right-3 bg-[#2C3E50] text-white text-xs font-bold px-3 py-1 rounded-full border-4 border-[#F8F9FA]">
                       {item.year}YR
                     </div>
