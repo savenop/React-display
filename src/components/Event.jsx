@@ -20,7 +20,6 @@ const getDriveId = (url) => {
   return id;
 };
 
-// --- UPDATED COMPONENT ---
 const Event = ({ preFetchedData = [] }) => {
   // Use pre-fetched data
   const events = preFetchedData;
@@ -31,30 +30,22 @@ const Event = ({ preFetchedData = [] }) => {
   const [imgError, setImgError] = useState(false);
   const [isDeadLink, setIsDeadLink] = useState(false);
 
-  // --- SYNC GLOBAL MEMORY & ADVANCE ON EXIT ---
+  // --- SYNC GLOBAL MEMORY ---
   useEffect(() => {
     savedEventIndex = currentIndex;
   }, [currentIndex]);
-
-  useEffect(() => {
-    // When unmounting, push index forward by 1 for next time
-    return () => {
-      if (events && events.length > 0) {
-        savedEventIndex = (savedEventIndex + 1) % events.length;
-      }
-    };
-  }, [events]);
 
   // --- INTERNAL CYCLE TIMER ---
   useEffect(() => {
     if (events.length === 0) return;
 
+    // OPTIMIZATION: Increased interval slightly to reduce frequency of heavy DOM updates
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % events.length);
-    }, 8000);
+    }, 10000);
 
     return () => clearInterval(interval);
-  }, [events]);
+  }, [events.length]);
 
   // Reset errors when the slide changes
   useEffect(() => {
@@ -65,7 +56,7 @@ const Event = ({ preFetchedData = [] }) => {
   if (!events.length) return <div className="h-screen flex items-center justify-center text-gray-400">No Events Found</div>;
 
   // --- CURRENT ITEM ---
-  const item = events[currentIndex % events.length]; // Safeguard index
+  const item = events[currentIndex % events.length];
   
   const rawUrl = item["Upload your Poster Image (JPEG/PNG recommended) or Short Video (MP4/MOV recommended)"];
   const type = item["Select Content Type"]?.toLowerCase() || "";
@@ -87,26 +78,24 @@ const Event = ({ preFetchedData = [] }) => {
   return (
     <div className="relative h-screen w-full bg-white flex items-center justify-center overflow-hidden">
       
-      {/* BACKGROUND DECORATION */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-         <motion.div
-           animate={{ backgroundPosition: ['0px 0px', '-30px -30px'] }}
-           transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-           className="absolute inset-0 opacity-[0.3]"
-           style={{
+      {/* OPTIMIZATION: Static Background (Removed Animation Loop) */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-[0.3]"
+        style={{
              backgroundImage: 'radial-gradient(circle, #94a3b8 2px, transparent 2px)', 
              backgroundSize: '30px 30px' 
-           }}
-         />
-      </div>
+        }}
+      />
 
       <AnimatePresence mode='wait'>
         <motion.div 
           key={currentIndex} 
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.02 }}
-          transition={{ duration: 0.5 }}
+          // OPTIMIZATION: Removed 'scale' transition. Only using Opacity.
+          // Scaling large images (85vh) is heavy on low-end GPUs.
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: "linear" }}
           className="relative z-10 w-full h-full flex flex-col items-center justify-center p-12 md:p-20"
         >
           {isDeadLink ? (

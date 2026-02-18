@@ -47,7 +47,7 @@ const InaugurationScreen = ({
         >
           <img 
             src="https://www.kiet.edu/favicon.ico" 
-            className="h-16 w-16 object-contain" 
+            className="h-20 w-20 object-contain" 
             alt="KIET Logo" 
           />
         </motion.div>
@@ -111,7 +111,7 @@ const InaugurationScreen = ({
           className="mt-8 text-xs text-[#2C3E50]/70 font-mono uppercase tracking-wider"
         >
           {isSystemReady 
-            ? "System Secure • Ready to Launch" 
+            ? "All API Fetched • Ready to Launch • Server Running" 
             : isError 
               ? "⚠ Connection Error (503)" 
               : loadingStatus}
