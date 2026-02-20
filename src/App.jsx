@@ -30,6 +30,7 @@ const App = () => {
   // Slideshow States
   const [currentIndex, setCurrentIndex] = useState(0); 
   const [awardIndex, setAwardIndex] = useState(0);
+  const [eventIndex, setEventIndex] = useState(0); // Added Event Index
   const [page, setPage] = useState(0); 
   const [progressKey, setProgressKey] = useState(0); 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -113,6 +114,7 @@ const App = () => {
       if (prevPage === NO_OF_SLIDES) {
         setCurrentIndex((prevIdx) => (prevIdx + 1) % (newsList.length || 1));
         setAwardIndex((prev) => prev + 1); 
+        setEventIndex((prev) => prev + 1); // Increment Event Index
         return 0; 
       } else {
         return prevPage + 1; 
@@ -125,6 +127,8 @@ const App = () => {
     setPage((prevPage) => {
       if (prevPage === 0) {
         setCurrentIndex((prevIdx) => prevIdx === 0 ? (newsList.length || 1) - 1 : prevIdx - 1);
+        setAwardIndex((prev) => Math.max(0, prev - 1)); // Decrement safely
+        setEventIndex((prev) => Math.max(0, prev - 1)); // Decrement safely
         return NO_OF_SLIDES;
       } else {
         return prevPage - 1;
@@ -254,7 +258,8 @@ const App = () => {
                       exit={{ opacity: 0 }}
                       className="h-screen w-full flex items-center justify-center z-20"
                   >
-                      <Event preFetchedData={eventsList} />
+                      {/* Passed eventIndex here */}
+                      <Event preFetchedData={eventsList} slideIndex={eventIndex} /> 
                   </motion.div>
                 ) : (
                   <motion.div

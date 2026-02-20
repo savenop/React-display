@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Global memory to remember index across slide changes
-let savedEventIndex = 0; 
-
 const getDriveId = (url) => {
   if (!url) return null;
   let id = null;
@@ -20,43 +17,24 @@ const getDriveId = (url) => {
   return id;
 };
 
-const Event = ({ preFetchedData = [] }) => {
-  // Use pre-fetched data
+const Event = ({ preFetchedData = [], slideIndex = 0 }) => {
   const events = preFetchedData;
-
-  // Initialize with the remembered global index
-  const [currentIndex, setCurrentIndex] = useState(savedEventIndex);
-  
   const [imgError, setImgError] = useState(false);
   const [isDeadLink, setIsDeadLink] = useState(false);
-
-  // --- SYNC GLOBAL MEMORY ---
-  useEffect(() => {
-    savedEventIndex = currentIndex;
-  }, [currentIndex]);
-
-  // --- INTERNAL CYCLE TIMER ---
-  useEffect(() => {
-    if (events.length === 0) return;
-
-    // OPTIMIZATION: Increased interval slightly to reduce frequency of heavy DOM updates
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % events.length);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [events.length]);
 
   // Reset errors when the slide changes
   useEffect(() => {
     setImgError(false);
     setIsDeadLink(false);
-  }, [currentIndex]);
+  }, [slideIndex]);
 
-  if (!events.length) return <div className="h-screen flex items-center justify-center text-gray-400">No Events Found</div>;
+  if (!events || events.length === 0) {
+    return <div className="h-screen flex items-center justify-center text-gray-400">No Events Found</div>;
+  }
 
-  // --- CURRENT ITEM ---
-  const item = events[currentIndex % events.length];
+  // --- SAFE CURRENT ITEM CALCULATION ---
+  const actualIndex = slideIndex % events.length;
+  const item = events[actualIndex];
   
   const rawUrl = item["Upload your Poster Image (JPEG/PNG recommended) or Short Video (MP4/MOV recommended)"];
   const type = item["Select Content Type"]?.toLowerCase() || "";
@@ -78,7 +56,7 @@ const Event = ({ preFetchedData = [] }) => {
   return (
     <div className="relative h-screen w-full bg-white flex items-center justify-center overflow-hidden">
       
-      {/* OPTIMIZATION: Static Background (Removed Animation Loop) */}
+      {/* Static Background */}
       <div 
         className="absolute inset-0 pointer-events-none opacity-[0.3]"
         style={{
@@ -89,13 +67,11 @@ const Event = ({ preFetchedData = [] }) => {
 
       <AnimatePresence mode='wait'>
         <motion.div 
-          key={currentIndex} 
-          // OPTIMIZATION: Removed 'scale' transition. Only using Opacity.
-          // Scaling large images (85vh) is heavy on low-end GPUs.
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          key={`event-${actualIndex}`} // Using actualIndex to force re-render on change
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.4, ease: "linear" }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
           className="relative z-10 w-full h-full flex flex-col items-center justify-center p-12 md:p-20"
         >
           {isDeadLink ? (
@@ -105,7 +81,7 @@ const Event = ({ preFetchedData = [] }) => {
           ) : isVideo ? (
             <video 
                src={mediaSrc} 
-               className="max-h-[85vh] max-w-full object-contain drop-shadow-xl rounded-lg" 
+               className="max-h-[85vh] max-w-full object-contain drop-shadow-2xl rounded-xl" 
                autoPlay muted loop playsInline 
                onError={() => setIsDeadLink(true)}
             />
@@ -113,8 +89,8 @@ const Event = ({ preFetchedData = [] }) => {
             <img 
                src={mediaSrc} 
                referrerPolicy="no-referrer"
-               className="max-h-[85vh] max-w-full object-contain drop-shadow-xl rounded-lg" 
-               alt="Event"
+               className="max-h-[85vh] max-w-full object-contain drop-shadow-2xl rounded-xl" 
+               alt="Event Poster"
                onError={() => {
                    if (!imgError) {
                        setImgError(true);
