@@ -132,7 +132,7 @@ const News = ({ data, currentIndex, totalCount }) => {
 
         <motion.h1
           variants={itemVariants}
-          className="text-5xl xl:text-7xl font-black leading-[1.05] mb-6 tracking-tight 
+          className="text-5xl xl:text-7xl font-black leading-[1.1] pb-2 mb-4 tracking-tight 
                      bg-gradient-to-r from-[#E67E22] via-[#F39C12] to-[#D35400]
                      bg-clip-text text-transparent 
                      drop-shadow-sm line-clamp-3"
